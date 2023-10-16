@@ -1,10 +1,10 @@
-# QuarkLink Getting Started DataBase Direct
+# QuarkLink Database Direct
 
-This project provides instructions on how to get started with QuarkLink to make a secure IoT device using an ESP32 ([esp32-c3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/hw-reference/esp32c3/user-guide-devkitm-1.html)).
+This example project provides instructions on how to use QuarkLink to make a secure IoT device using an ESP32 and specificly connect to a Database Direct([esp32-c3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/hw-reference/esp32c3/user-guide-devkitm-1.html)).
 
 The result is an ESP32 that is using secure boot, flash encryption, has a Root-of-Trust, and which can only be updated Over-The-Air with firmware signed by a key from the QuarkLink Hardware Security Module (HSM).
 
-See the [QuarkLink Getting Started Guide](https://github.com/cryptoquantique/cryptoquantique.github.io/blob/main/QuarkLink%20Ignite%20Getting%20Started%20Guide%20V1.00.pdf) for more detailed information on how to use this example project.
+See the chapter 16 of the [QuarkLink User Guide](https://cryptoquantique.github.io/QuarkLink_User_Guide.pdf) for more detailed information on how to create a Database Direct connection.
 
 ## Requirements
 
@@ -20,51 +20,46 @@ There are a few requirements needed in order to get started with this project:
 - **quarklink-client libraries**
     The quarklink-client library comes in the form of compiled binaries and can be found in the [quarklink-binaries repository](https://github.com/cryptoquantique/quarklink-binaries/tree/main/quarklink-client).  
     Copy the required files into the `lib` folder of this project.  
-    For example, if building for `esp32-c3`: copy the file `libquarklink-client-esp32-c3-v1.3.0.a` to the local clone of this repository, inside `lib`.
-
-## Pre-built binaries
-
-To make getting started easy there are pre-built binaries of this project available in the [quarklink-binaries repository](https://github.com/cryptoquantique/quarklink-binaries/tree/main/quarklink-getting-started).  
-These binaries can be programmed into the ESP32 device using the QuarkLink provisioning facility. No need for third party programming tools.
+    For example, if building for `esp32-c3`: copy the file `libquarklink-client-esp32-c3-ds-v1.4.0.a` to the local clone of this repository, inside `lib`.
 
 ## Building this project
 
 To build the project use the ```pio run``` command:
 ```sh
 > pio run
-Processing esp32-c3-vefuse (board: esp32-c3-devkitm-1; platform: espressif32 @6.3.2; framework: espidf)
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------Verbose mode can be enabled via `-v, --verbose` option                                                                                                                                                                                                            
+Processing esp32-c3-ds-vefuse (board: esp32-c3-devkitm-1; platform: espressif32 @6.4.0; framework: espidf)
+------------------------------------------------------------------------------------------------------------------------------Verbose mode can be enabled via `-v, --verbose` option
+...
+Patch file: ota_ds_peripheral.patch
+Patch has already been applied
 CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-c3-devkitm-1.html
-PLATFORM: Espressif 32 (6.3.2) > Espressif ESP32-C3-DevKitM-1
+PLATFORM: Espressif 32 (6.4.0) > Espressif ESP32-C3-DevKitM-1
 HARDWARE: ESP32C3 160MHz, 320KB RAM, 4MB Flash
+...
+Building in release mode
+Retrieving maximum program size .pio\build\esp32-c3-ds-vefuse\firmware.elf
+Checking size .pio\build\esp32-c3-ds-vefuse\firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  16.5% (used 54072 bytes from 327680 bytes)
+Flash: [========= ]  92.3% (used 967932 bytes from 1048576 bytes)
+================================================ [SUCCESS] Took 7.56 seconds ================================================
 
-. . .
-
-Creating esp32c3 image...
-Merged 2 ELF sections
-Successfully created esp32c3 image.
-=================================================================================================================
-[SUCCESS] Took 112.44 seconds
-=================================================================================================================
-
-Environment      Status    Duration
----------------  --------  ------------
-esp32-c3-vefuse  SUCCESS   00:01:52.438
-==================================================================================================================
- 1 succeeded in 00:01:52.438
-==================================================================================================================
+Environment         Status    Duration
+------------------  --------  ------------
+esp32-c3-ds-vefuse  SUCCESS   00:00:07.565
+================================================ 1 succeeded in 00:00:07.565 ================================================ 
 
 ```
 
 The build will create a firmware binary file within the .pio directory:
 ```sh
->dir /b .pio\build\esp32-c3-vefuse\firmware.bin
+>dir /b .pio\build\esp32-c3-ds-vefuse\firmware.bin
 firmware.bin
 ```
 
 The ```firmware.bin``` file is what you upload to QuarkLink. Click on the "Firmwares" option of the QuarkLink main menu to access the uploading function.  
 Once uploaded to QuarkLink configure your Batch with the new firmware image and it will be automatically downloaded to the ESP32.  
-See the [QuarkLink Getting Started Guide](https://github.com/cryptoquantique/cryptoquantique.github.io/blob/main/QuarkLink%20Ignite%20Getting%20Started%20Guide%20V1.00.pdf) for more details.
+See the chapter 4 of the  [QuarkLink Getting Started Guide](https://github.com/cryptoquantique/cryptoquantique.github.io/blob/main/QuarkLink%20Ignite%20Getting%20Started%20Guide%20V1.00.pdf) for more details.
 
 ## Configurations
 There are currently two configurations available for the firmware:
@@ -73,7 +68,7 @@ There are currently two configurations available for the firmware:
 
 When building, make sure to choose the same configuration that the device was provisioned with via QuarkLink.
 
-The default environment is `esp32-c3-vefuses`, as can be seen from the [example above](#building-this-project). To build the firmware with the `esp32-c3-release` configuration, run the command 
+The default environment is `esp32-c3-ds-vefuses`, as can be seen from the [example above](#building-this-project). To build the firmware with the `esp32-c3-ds-release` configuration, run the command 
 ```sh
 >pio run -e esp32-c3-release
 ```
@@ -85,15 +80,15 @@ More information on what virtual efuses are can be found as part of [espressif p
 All the environments can be updated to use the debug version of the QuarkLink client library if needed. In order to do this, open the file [platformio.ini](platformio.ini) and update the desired configuration `build_flags` option.  
 Example:
 ```ini
-[env:esp32-c3-release]
+[env:esp32-c3-ds-release]
 board = esp32-c3-devkitm-1
-build_flags = -Llib -lquarklink-client-esp32-c3-v1.3.0 -Iinclude
+build_flags = -Llib -lquarklink-client-esp32-c3-ds-v1.4.0 -Iinclude
 ```
 Becomes:
 ```ini
-[env:esp32-c3-release]
+[env:esp32-c3-ds-release]
 board = esp32-c3-devkitm-1
-build_flags = -Llib -lquarklink-client-esp32-c3-v1.3.0-debug -Iinclude
+build_flags = -Llib -lquarklink-client-esp32-c3-ds-v1.3.0-debug -Iinclude
 ```
 
 ## Building project version with RGB LED

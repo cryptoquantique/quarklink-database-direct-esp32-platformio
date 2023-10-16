@@ -7,6 +7,9 @@
 #include "led_strip.h"
 #include "quarklink.h"
 
+#include "quarklink_extras.h"
+#include "rsa_sign_alt.h"
+
 #define LED_STRIP_BLINK_GPIO 8  // GPIO assignment
 #define LED_STRIP_LED_NUMBERS 1 // LED numbers in the strip
 #define LED_STRIP_RMT_RES_HZ (10 * 1000 * 1000) // 10MHz resolution, 1 tick = 0.1us (led strip needs a high resolution)
@@ -19,7 +22,7 @@
 #define GREEN 2
 #define BLUE 3
 
-/* FreeRTOS event group to signal when we are connected*/
+/* FreeRTOS event group to signal when we are connected */
 static EventGroupHandle_t s_wifi_event_group;
 
 /* The event group allows multiple bits for each event, but we only care about two events:
@@ -35,7 +38,7 @@ static int count = 0;
 static const char *TAG = "quarklink-database-direct";
 quarklink_context_t quarklink;
 
-/* Intervals*/
+/* Intervals */
 // How often to check for status, in s
 static const int STATUS_CHECK_INTERVAL = 20;
 // publish interval in s
@@ -78,43 +81,43 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
 static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     static int output_len = 0; // Stores number of bytes read
     switch (evt->event_id) {
-    case HTTP_EVENT_ERROR:
-        ESP_LOGD(TAG, "HTTP_EVENT_ERROR");
-        break;
-    case HTTP_EVENT_ON_CONNECTED:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_CONNECTED");
-        break;
-    case HTTP_EVENT_HEADER_SENT:
-        ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
-        break;
-    case HTTP_EVENT_ON_HEADER:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
-        break;
-    case HTTP_EVENT_ON_DATA:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
-        if (!esp_http_client_is_chunked_response(evt->client)) {
-            if (evt->user_data) {
-                memcpy(evt->user_data + output_len, evt->data, evt->data_len);
+        case HTTP_EVENT_ERROR:
+            ESP_LOGD(TAG, "HTTP_EVENT_ERROR");
+            break;
+        case HTTP_EVENT_ON_CONNECTED:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_CONNECTED");
+            break;
+        case HTTP_EVENT_HEADER_SENT:
+            ESP_LOGD(TAG, "HTTP_EVENT_HEADER_SENT");
+            break;
+        case HTTP_EVENT_ON_HEADER:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
+            break;
+        case HTTP_EVENT_ON_DATA:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+            if (!esp_http_client_is_chunked_response(evt->client)) {
+                if (evt->user_data) {
+                    memcpy(evt->user_data + output_len, evt->data, evt->data_len);
+                }
+                output_len += evt->data_len;
             }
-            output_len += evt->data_len;
-        }
-        else {
-            ESP_LOGD(TAG, "it's chunked response");
-        }
-        break;
-    case HTTP_EVENT_ON_FINISH:
-        ESP_LOGD(TAG, "HTTP_EVENT_ON_FINISH");
-        // Insert end of string
-        ((char *)evt->user_data)[output_len] = '\0';
-        output_len = 0;
-        break;
-    case HTTP_EVENT_DISCONNECTED:
-        ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
-        output_len = 0;
-        break;
-    case HTTP_EVENT_REDIRECT:
-        ESP_LOGD(TAG, "HTTP_EVENT_REDIRECT");
-        break;
+            else {
+                ESP_LOGD(TAG, "it's chunked response");
+            }
+            break;
+        case HTTP_EVENT_ON_FINISH:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_FINISH");
+            // Insert end of string
+            ((char *)evt->user_data)[output_len] = '\0';
+            output_len = 0;
+            break;
+        case HTTP_EVENT_DISCONNECTED:
+            ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
+            output_len = 0;
+            break;
+        case HTTP_EVENT_REDIRECT:
+            ESP_LOGD(TAG, "HTTP_EVENT_REDIRECT");
+            break;
     }
     return ESP_OK;
 }
@@ -231,7 +234,7 @@ int databaseDirectPost(const quarklink_context_t *quarklink, int post_count) {
     return err;
 }
 
-void getting_started_task(void *pvParameter) {
+void main_task(void *pvParameter) {
 
     quarklink_return_t ql_ret;
     quarklink_return_t ql_status = QUARKLINK_ERROR;
@@ -245,61 +248,64 @@ void getting_started_task(void *pvParameter) {
             ESP_LOGI(TAG, "Get status");
             ql_status = quarklink_status(&quarklink);
             switch (ql_status) {
-            case QUARKLINK_STATUS_ENROLLED:
-                ESP_LOGI(TAG, "Enrolled");
-                break;
-            case QUARKLINK_STATUS_FWUPDATE_REQUIRED:
-                ESP_LOGI(TAG, "Firmware Update required");
-                break;
-            case QUARKLINK_STATUS_NOT_ENROLLED:
-                ESP_LOGI(TAG, "Not enrolled");
-                break;
-            case QUARKLINK_STATUS_CERTIFICATE_EXPIRED:
-                ESP_LOGI(TAG, "Certificate expired");
-                break;
-            case QUARKLINK_STATUS_REVOKED:
-#if (LED_COLOUR)
-                led_set_colour(led_strip, RED);
-#endif
-                ESP_LOGI(TAG, "Device revoked");
-                break;
-            default:
-                ESP_LOGE(TAG, "Error during status request");
-                continue;
+                case QUARKLINK_STATUS_ENROLLED:
+                    if (strcmp(quarklink.iotHubEndpoint, "") == 0) {
+                        ESP_LOGI(TAG, "No enrolment info saved. Re-enrolling");
+                        ql_status = QUARKLINK_STATUS_NOT_ENROLLED;
+                    }
+                    ESP_LOGI(TAG, "Enrolled");
+                    break;
+                case QUARKLINK_STATUS_FWUPDATE_REQUIRED:
+                    ESP_LOGI(TAG, "Firmware Update required");
+                    break;
+                case QUARKLINK_STATUS_NOT_ENROLLED:
+                    ESP_LOGI(TAG, "Not enrolled");
+                    break;
+                case QUARKLINK_STATUS_CERTIFICATE_EXPIRED:
+                    //Ignore this case as not relevant for DBD
+                    break;
+                case QUARKLINK_STATUS_REVOKED:
+                    #if (LED_COLOUR)
+                        led_set_colour(led_strip, RED);
+                    #endif
+                    ESP_LOGI(TAG, "Device revoked");
+                    break;
+                default:
+                    ESP_LOGE(TAG, "Error during status request");
+                    continue;
             }
 
             if (ql_status == QUARKLINK_STATUS_NOT_ENROLLED ||
-                ql_status == QUARKLINK_STATUS_CERTIFICATE_EXPIRED ||
                 ql_status == QUARKLINK_STATUS_REVOKED) {
                 /* enroll */
                 ESP_LOGI(TAG, "Enrol to %s", quarklink.endpoint);
                 ql_ret = quarklink_enrol(&quarklink);
                 switch (ql_ret) {
-                case QUARKLINK_SUCCESS:
-                    ESP_LOGI(TAG, "Successfully enrolled!");
-                    ql_ret = quarklink_persistEnrolmentContext(&quarklink);
-                    if (ql_ret != QUARKLINK_SUCCESS) {
-                        ESP_LOGW(TAG, "Failed to store the Enrolment context");
+                    case QUARKLINK_SUCCESS:
+                        ESP_LOGI(TAG, "Successfully enrolled!");
+                        ql_ret = quarklink_persistEnrolmentContext(&quarklink);
+                        if (ql_ret != QUARKLINK_SUCCESS) {
+                            ESP_LOGW(TAG, "Failed to store the Enrolment context");
+                        }
+                        #if (LED_COLOUR)
+                            led_set_colour(led_strip, LED_COLOUR);
+                        #endif
+                        ql_status = QUARKLINK_STATUS_ENROLLED;
+                        break;
+                    case QUARKLINK_DEVICE_DOES_NOT_EXIST:
+                        ESP_LOGW(TAG, "Device does not exist");
+                        break;
+                    case QUARKLINK_DEVICE_REVOKED:
+                        #if (LED_COLOUR)
+                            led_set_colour(led_strip, RED);
+                        #endif
+                        ESP_LOGW(TAG, "Device revoked");
+                        break;
+                    case QUARKLINK_CACERTS_ERROR:
+                    default:
+                        ESP_LOGE(TAG, "Error during enrol");
+                        break;
                     }
-                    #if (LED_COLOUR)
-                        led_set_colour(led_strip, LED_COLOUR);
-                    #endif
-                    ql_status = QUARKLINK_STATUS_ENROLLED;
-                    break;
-                case QUARKLINK_DEVICE_DOES_NOT_EXIST:
-                    ESP_LOGW(TAG, "Device does not exist");
-                    break;
-                case QUARKLINK_DEVICE_REVOKED:
-                    #if (LED_COLOUR)
-                        led_set_colour(led_strip, RED);
-                    #endif
-                    ESP_LOGW(TAG, "Device revoked");
-                    break;
-                case QUARKLINK_CACERTS_ERROR:
-                default:
-                    ESP_LOGE(TAG, "Error during enrol");
-                    break;
-                }
             }
 
             if (ql_status == QUARKLINK_STATUS_FWUPDATE_REQUIRED) {
@@ -307,23 +313,23 @@ void getting_started_task(void *pvParameter) {
                 ESP_LOGI(TAG, "Get firmware update");
                 ql_ret = quarklink_firmwareUpdate(&quarklink, NULL);
                 switch (ql_ret) {
-                case QUARKLINK_FWUPDATE_UPDATED:
-                    ESP_LOGI(TAG, "Firmware updated. Rebooting...");
-                    esp_restart();
-                    break;
-                case QUARKLINK_FWUPDATE_NO_UPDATE:
-                    ESP_LOGI(TAG, "No firmware update");
-                    break;
-                case QUARKLINK_FWUPDATE_WRONG_SIGNATURE:
-                    ESP_LOGI(TAG, "Wrong firmware signature");
-                    break;
-                case QUARKLINK_FWUPDATE_MISSING_SIGNATURE:
-                    ESP_LOGI(TAG, "Missing required firmware signature");
-                    break;
-                case QUARKLINK_FWUPDATE_ERROR:
-                default:
-                    ESP_LOGE(TAG, "Error while updating firmware");
-                    break;
+                    case QUARKLINK_FWUPDATE_UPDATED:
+                        ESP_LOGI(TAG, "Firmware updated. Rebooting...");
+                        esp_restart();
+                        break;
+                    case QUARKLINK_FWUPDATE_NO_UPDATE:
+                        ESP_LOGI(TAG, "No firmware update");
+                        break;
+                    case QUARKLINK_FWUPDATE_WRONG_SIGNATURE:
+                        ESP_LOGI(TAG, "Wrong firmware signature");
+                        break;
+                    case QUARKLINK_FWUPDATE_MISSING_SIGNATURE:
+                        ESP_LOGI(TAG, "Missing required firmware signature");
+                        break;
+                    case QUARKLINK_FWUPDATE_ERROR:
+                    default:
+                        ESP_LOGE(TAG, "Error while updating firmware");
+                        break;
                 }
             }
         }
@@ -366,7 +372,7 @@ void getting_started_task(void *pvParameter) {
                 }
             }
             else {
-                ESP_LOGW(TAG, "Not a Database Direct Policy!");
+                ESP_LOGW(TAG, "This example is only meant to work with Database Direct policies");
                 strcpy(quarklink.deviceCert, "");
                 strcpy(quarklink.token, "");
                 quarklink_deleteEnrolmentContext(&quarklink);
@@ -383,11 +389,11 @@ void getting_started_task(void *pvParameter) {
 #if (LED_COLOUR)
 void led_set_colour(led_strip_handle_t strip, int colour) {
     if (colour == RED)
-        led_strip_set_pixel(led_strip, 0, 150, 0, 0);
+        led_strip_set_pixel(led_strip, 0, 10, 0, 0);
     else if (colour == GREEN)
-        led_strip_set_pixel(led_strip, 0, 0, 150, 0);
+        led_strip_set_pixel(led_strip, 0, 0, 10, 0);
     else if (colour == BLUE)
-        led_strip_set_pixel(led_strip, 0, 0, 0, 150);
+        led_strip_set_pixel(led_strip, 0, 0, 0, 10);
     else
         led_strip_set_pixel(led_strip, 0, 0, 0, 0);
     led_strip_refresh(led_strip);
@@ -444,5 +450,5 @@ void app_main(void) {
 
     wifi_init_sta();
 
-    xTaskCreate(&getting_started_task, "getting_started_task", 1024 * 8, NULL, 5, NULL);
+    xTaskCreate(&main_task, "main_task", 1024 * 8, NULL, 5, NULL);
 }
