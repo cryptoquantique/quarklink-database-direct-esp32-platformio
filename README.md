@@ -22,6 +22,11 @@ There are a few requirements needed in order to get started with this project:
     Copy the required files into the `lib` folder of this project.  
     For example, if building for `esp32-c3`: copy the file `libquarklink-client-esp32-c3-ds-v1.4.0.a` to the local clone of this repository, inside `lib`.
 
+## Pre-built binaries
+
+There are pre-built binaries of this project available in the [quarklink-binaries repository](https://github.com/cryptoquantique/quarklink-binaries/tree/main/quarklink-examples/database-direct).  
+These binaries can be programmed into the ESP32 device using the QuarkLink provisioning facility. No need for third party programming tools.
+
 ## Building this project
 
 To build the project use the ```pio run``` command:
