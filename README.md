@@ -6,6 +6,8 @@ The result is an ESP32 that is using secure boot, flash encryption, has a Root-o
 
 See the chapter 16 of the [QuarkLink User Guide](https://cryptoquantique.github.io/QuarkLink_User_Guide.pdf) for more detailed information on how to create a Database Direct connection.
 
+In case you want to use MongoDB as Database Direct solution, check out the [Mongo Atlas QuarkLink Setup Procedure](https://cryptoquantique.github.io/Mongo_Atlas_QuarkLink_Setup_Procedure.pdf) for more detailed information on how to setup MongoDB Atlas
+
 ## Requirements
 
 There are a few requirements needed in order to get started with this project:
