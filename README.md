@@ -4,9 +4,9 @@ This example project provides instructions on how to use QuarkLink to make a sec
 
 The result is an ESP32 that is using secure boot, flash encryption, has a Root-of-Trust, and which can only be updated Over-The-Air with firmware signed by a key from the QuarkLink Hardware Security Module (HSM).
 
-See the chapter 16 of the [QuarkLink User Guide](https://cryptoquantique.github.io/QuarkLink_User_Guide.pdf) for more detailed information on how to create a Database Direct connection.
+See the [QuarkLink User Guide](https://docs.quarklink.io/docs/database-direct) for more detailed information on how to create a Database Direct connection.
 
-In case you want to use MongoDB as Database Direct solution, check out the [Mongo Atlas QuarkLink Setup Procedure](https://cryptoquantique.github.io/Mongo_Atlas_QuarkLink_Setup_Procedure.pdf) for more detailed information on how to setup MongoDB Atlas
+In case you want to use MongoDB as Database Direct solution, check out the [Mongo Atlas QuarkLink Setup Procedure](https://docs.quarklink.io/docs/mongo-atlas-quarklink-setup-procedure) for more detailed information on how to setup MongoDB Atlas
 
 ## Requirements
 
@@ -66,7 +66,7 @@ firmware.bin
 
 The ```firmware.bin``` file is what you upload to QuarkLink. Click on the "Firmwares" option of the QuarkLink main menu to access the uploading function.  
 Once uploaded to QuarkLink configure your Batch with the new firmware image and it will be automatically downloaded to the ESP32.  
-See the chapter 4 of the  [QuarkLink Getting Started Guide](https://github.com/cryptoquantique/cryptoquantique.github.io/blob/main/QuarkLink%20Ignite%20Getting%20Started%20Guide%20V1.00.pdf) for more details.
+See the [QuarkLink Getting Started Guide](https://docs.quarklink.io/docs/getting-started-with-quarklink-ignite#getting-started) for more details.
 
 ## Configurations
 There are currently two configurations available for the firmware:
