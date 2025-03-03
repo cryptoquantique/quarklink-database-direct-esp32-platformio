@@ -1,3 +1,6 @@
+### ⚠️ WARNING
+This repository has been archived and Database Direct is no longer supported in QuarkLink.
+
 # QuarkLink Database Direct
 
 This example project provides instructions on how to use QuarkLink to make a secure IoT device using an ESP32 and specificly connect to a Database Direct([esp32-c3](https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/hw-reference/esp32c3/user-guide-devkitm-1.html)).
